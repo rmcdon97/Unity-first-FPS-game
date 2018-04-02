@@ -36,6 +36,7 @@ public class GrapplingHook : MonoBehaviour
 
         if(isFlying && Input.GetButtonUp("Fire2"))
         {
+            //need to convert from change in pos per update to acceleration force
             FPC.continueMovementPostGrapple = Vector3.Lerp(transform.position, pos, speed / Vector3.Distance(transform.position, pos));
             FPC.grappleReleased = true;
             isFlying = false;
