@@ -6,7 +6,8 @@ public class HandGunDamage : MonoBehaviour {
 
     public int damageAmount = 5;
     public float allowedRange = 15;
-    public float targetDistance;
+    public float targetDistance, grappleDistance = -1f;
+    public RaycastHit grappleEnd;
 
     private void Update()
     {
@@ -21,6 +22,14 @@ public class HandGunDamage : MonoBehaviour {
                 {
                     shot.transform.SendMessage("DeductPoints", damageAmount, SendMessageOptions.DontRequireReceiver);
                 }
+            }
+        }
+        else if(Input.GetButtonDown("Fire2"))
+        {
+
+            if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out grappleEnd))
+            {
+                grappleDistance = grappleEnd.distance;
             }
         }
     }
