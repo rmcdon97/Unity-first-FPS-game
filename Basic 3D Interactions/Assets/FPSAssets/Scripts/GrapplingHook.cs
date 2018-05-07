@@ -7,11 +7,13 @@ public class GrapplingHook : MonoBehaviour
 {
     public Camera playerCam;
     public RaycastHit hit;
+    public float castRadius;
 
     public LayerMask cullingMask;
     public int maxDistance;
 
     public bool isFlying;
+	public bool isSwinging;
     public Vector3 pos;
 
     public float speed = 10;
@@ -34,20 +36,47 @@ public class GrapplingHook : MonoBehaviour
         if (isFlying)
             Flying();
 
-        if(isFlying && Input.GetButtonUp("Fire2"))
+		if(Input.GetButtonUp("Fire1"))
+		{
+			isSwinging = false;
+			FPC.swinging = false;
+			
+			if(!Input.GetButton("Fire2"))
+			{
+				FPC.continueMovementPostGrapple = (pos - transform.position).normalized * speed;
+				FPC.grappleReleased = true;
+				isFlying = false;
+				FPC.canMove = true;
+				LR.enabled = false;
+			}
+		}
+		
+        if(isFlying && Input.GetButtonUp("Fire2") && !isSwinging)
         {
+            FPC.continueMovementPostGrapple = (pos - transform.position).normalized * speed;
             //need to convert from change in pos per update to acceleration force
-            FPC.continueMovementPostGrapple = Vector3.Lerp(transform.position, pos, speed / Vector3.Distance(transform.position, pos));
+            //FPC.continueMovementPostGrapple = Vector3.Lerp(transform.position, pos, speed / Vector3.Distance(transform.position, pos));
             FPC.grappleReleased = true;
             isFlying = false;
             FPC.canMove = true;
             LR.enabled = false;
         }
+
+        if(isFlying && Input.GetButtonDown("Fire1"))
+        {
+            //start rope swing physics
+			FPC.continueMovementPostGrapple = (pos - transform.position).normalized * speed;
+			FPC.grappleReleased = true;
+			isSwinging = true;
+			FPC.swinging = true;
+			FPC.webPoint = pos;
+			FPC.maxWebLength = Vector3.Distance(transform.position, pos);
+        }
     }
 
     public void FindSpot()
     {
-        if (Physics.Raycast(playerCam.transform.position, playerCam.transform.forward, out hit, maxDistance, cullingMask))
+        if (Physics.SphereCast(playerCam.transform.position, castRadius, playerCam.transform.forward, out hit, maxDistance, cullingMask))
         {
             isFlying = true;
             pos = hit.point;
@@ -59,16 +88,20 @@ public class GrapplingHook : MonoBehaviour
 
     public void Flying()
     {
-        transform.position = Vector3.Lerp(transform.position, pos, speed * Time.deltaTime / Vector3.Distance(transform.position, pos));
-        
-        LR.SetPosition(0, hand.position);
+		if(!isSwinging)
+		{
+			transform.position = Vector3.Lerp(transform.position, pos, speed * Time.deltaTime / Vector3.Distance(transform.position, pos));
 
-        if(Vector3.Distance(transform.position, pos) < .5f)
-        {
-            isFlying = false;
-            FPC.canMove = true;
-            LR.enabled = false;
-        }
+			if(Vector3.Distance(transform.position, pos) < .5f)
+			{
+				isFlying = false;
+				FPC.canMove = true;
+				LR.enabled = false;
+			}
+		}
+		else
+			FPC.canMove = true;
+		LR.SetPosition(0, hand.position);
     }
 
 

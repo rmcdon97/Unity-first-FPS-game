@@ -43,7 +43,9 @@ namespace UnityStandardAssets.Characters.FirstPerson
         private AudioSource m_AudioSource;
 
         //my new variables
-        public bool canMove;
+        public bool canMove, swinging;
+		public Vector3 webPoint;
+		public float maxWebLength;
         public bool grappleReleased = false;
         public Vector3 continueMovementPostGrapple;
         private Vector3 prevSpeed;
@@ -63,6 +65,8 @@ namespace UnityStandardAssets.Characters.FirstPerson
             m_AudioSource = GetComponent<AudioSource>();
 			m_MouseLook.Init(transform , m_Camera.transform);
             canMove = true;
+			
+			swinging = false;
         }
 
 
@@ -70,8 +74,8 @@ namespace UnityStandardAssets.Characters.FirstPerson
         private void Update()
         {
             RotateView();
-            if(canMove)
-            {
+            //if(canMove)
+            //{
                 // the jump state needs to read here to make sure it is not missed
                 if (!m_Jump)
                 {
@@ -91,7 +95,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
                 }
 
                 m_PreviouslyGrounded = m_CharacterController.isGrounded;
-            }
+            //}
         }
 
 
@@ -116,15 +120,11 @@ namespace UnityStandardAssets.Characters.FirstPerson
                                 m_CharacterController.height / 2f, Physics.AllLayers, QueryTriggerInteraction.Ignore);
             desiredMove = Vector3.ProjectOnPlane(desiredMove, hitInfo.normal).normalized;
 
-            if (canMove)
+           
+            if (m_CharacterController.isGrounded)
             {
                 m_MoveDir.x = desiredMove.x * speed;
                 m_MoveDir.z = desiredMove.z * speed;
-            }
-
-
-            if (m_CharacterController.isGrounded)
-            {
                 m_MoveDir.y = -m_StickToGroundForce;
 
                 if (m_Jump)
@@ -139,11 +139,21 @@ namespace UnityStandardAssets.Characters.FirstPerson
             {
                 if(canMove)
                     m_MoveDir += Physics.gravity * m_GravityMultiplier * Time.fixedDeltaTime;
-                
+                else
+                {
+                    m_MoveDir.x = desiredMove.x * speed;
+                    m_MoveDir.z = desiredMove.z * speed;
+                }
+				if(swinging && Vector3.Distance(transform.position, webPoint) > maxWebLength)
+				{
+					m_MoveDir += ((webPoint - transform.position).normalized * (Vector3.Distance(webPoint, transform.position) - maxWebLength + 5f));
+				}
                 if(grappleReleased)
                 {
                     grappleReleased = false;
                     m_MoveDir = continueMovementPostGrapple;
+                    m_MoveDir.x += desiredMove.x * speed;
+                    m_MoveDir.z += desiredMove.z * speed;
                 }
             }
             m_CollisionFlags = m_CharacterController.Move(m_MoveDir * Time.fixedDeltaTime);
